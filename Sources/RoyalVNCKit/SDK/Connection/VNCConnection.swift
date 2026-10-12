@@ -45,6 +45,9 @@ public final class VNCConnection: NSObjectOrAnyObject {
     public let framebufferAllocator: VNCFramebufferAllocator?
 
 	// MARK: - Private Properties
+	/// Carries the connection instead of a TCP connection to `settings.hostname`, when set.
+	private let byteTransport: VNCByteTransport?
+
 	private let queue = DispatchQueue(label: "com.royalapps.royalvnc.connectionqueue",
 									  attributes: .concurrent)
 
@@ -70,17 +73,23 @@ public final class VNCConnection: NSObjectOrAnyObject {
 
     var mouseButtonState: VNCProtocol.MousePointerButton = [ ]
 
-    lazy var connection: some NetworkConnection = {
-        let connectionSettings = NetworkConnectionSettings(connectionTimeout: 15,
-                                                           host: settings.hostname,
-                                                           port: settings.port)
+    lazy var connection: any NetworkConnection = {
+        let connection: any NetworkConnection
 
-        // NOTE: To test SocketNetworkConnection on Darwin (macOS, iOS, etc.), comment out the the #if
+        if let byteTransport {
+            connection = ByteTransportNetworkConnection(transport: byteTransport)
+        } else {
+            let connectionSettings = NetworkConnectionSettings(connectionTimeout: 15,
+                                                               host: settings.hostname,
+                                                               port: settings.port)
+
+            // NOTE: To test SocketNetworkConnection on Darwin (macOS, iOS, etc.), comment out the the #if
 #if canImport(Network)
-        let connection = NWConnection(settings: connectionSettings)
+            connection = NWConnection(settings: connectionSettings)
 #else
-		let connection = SocketNetworkConnection(settings: connectionSettings)
+            connection = SocketNetworkConnection(settings: connectionSettings)
 #endif
+        }
 
         connection.setStatusUpdateHandler(connectionStatusDidChange)
 
@@ -191,11 +200,43 @@ public final class VNCConnection: NSObjectOrAnyObject {
 	}
 
 	// MARK: - Public Initializers
-    public init(settings: Settings,
-                logger: VNCLogger,
-                framebufferAllocator: VNCFramebufferAllocator?,
-                context: UnsafeMutableRawPointer?) {
+    public convenience init(settings: Settings,
+                            logger: VNCLogger,
+                            framebufferAllocator: VNCFramebufferAllocator?,
+                            context: UnsafeMutableRawPointer?) {
+        self.init(settings: settings,
+                  logger: logger,
+                  framebufferAllocator: framebufferAllocator,
+                  context: context,
+                  byteTransport: nil)
+    }
+
+    /// Runs the connection over `transport` instead of opening a TCP
+    /// connection to `settings.hostname` and `settings.port`. `connect()`
+    /// starts the handshake on it, and `disconnect()` closes it.
+    public convenience init(settings: Settings,
+                            transport: VNCByteTransport,
+                            framebufferAllocator: VNCFramebufferAllocator?) {
+#if canImport(OSLog)
+        let logger = VNCOSLogLogger()
+#else
+        let logger = VNCPrintLogger()
+#endif
+
+        self.init(settings: settings,
+                  logger: logger,
+                  framebufferAllocator: framebufferAllocator,
+                  context: nil,
+                  byteTransport: transport)
+    }
+
+    private init(settings: Settings,
+                 logger: VNCLogger,
+                 framebufferAllocator: VNCFramebufferAllocator?,
+                 context: UnsafeMutableRawPointer?,
+                 byteTransport: VNCByteTransport?) {
         self.settings = settings
+        self.byteTransport = byteTransport
 
         logger.isDebugLoggingEnabled = settings.isDebugLoggingEnabled
 

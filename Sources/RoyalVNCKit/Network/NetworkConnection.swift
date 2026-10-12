@@ -38,8 +38,6 @@ struct NetworkConnectionSettings {
 }
 
 protocol NetworkConnection: NetworkConnectionReading, NetworkConnectionWriting {
-    init(settings: NetworkConnectionSettings)
-
     var status: NetworkConnectionStatus { get }
     var isReady: Bool { get }
 
