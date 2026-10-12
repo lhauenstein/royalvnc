@@ -27,6 +27,9 @@ public final class VNCConnection: NSObjectOrAnyObject {
 #endif
 	public weak var delegate: VNCConnectionDelegate?
 
+	/// Learns about ExtendedDesktopSize messages, such as the answer to ``requestDesktopSize(width:height:)``.
+	public weak var desktopSizeDelegate: VNCDesktopSizeDelegate?
+
 #if canImport(ObjectiveC)
 	@objc
 #endif
@@ -120,7 +123,9 @@ public final class VNCConnection: NSObjectOrAnyObject {
 			// Pseudo Encodings
 			VNCPseudoEncodingType.lastRect.rawValue: VNCProtocol.LastRectEncoding(),
 			VNCPseudoEncodingType.continuousUpdates.rawValue: VNCProtocol.ContinuousUpdatesEncoding(),
-			VNCPseudoEncodingType.extendedDesktopSize.rawValue: VNCProtocol.ExtendedDesktopSizeEncoding(),
+			VNCPseudoEncodingType.extendedDesktopSize.rawValue: VNCProtocol.ExtendedDesktopSizeEncoding { [weak self] change in
+				self?.desktopSizeDidChange(change)
+			},
 			VNCPseudoEncodingType.desktopSize.rawValue: VNCProtocol.DesktopSizeEncoding(),
 			VNCPseudoEncodingType.desktopName.rawValue: VNCProtocol.DesktopNameEncoding(),
 			VNCPseudoEncodingType.cursor.rawValue: VNCProtocol.CursorEncoding(),

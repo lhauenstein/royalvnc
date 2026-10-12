@@ -25,6 +25,8 @@ extension VNCConnection {
 
 		var areContinuousUpdatesSupported = false
 		var areContinuousUpdatesEnabled = false
+
+		var supportsDesktopSizeChanges = false
 	}
 }
 

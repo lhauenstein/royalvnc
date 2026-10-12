@@ -9,6 +9,11 @@ import Foundation
 extension VNCProtocol {
 	struct ExtendedDesktopSizeEncoding: VNCReceivablePseudoEncoding {
 		let encodingType = VNCPseudoEncodingType.extendedDesktopSize.rawValue
+
+		/// Learns why the server sent each message. Not through the framebuffer: an update can
+		/// resize it with one rectangle and answer a request with the next, which still gets the
+		/// framebuffer the first one replaced.
+		let didReceiveChange: (VNCDesktopSizeChange) -> Void
 	}
 }
 
@@ -41,10 +46,6 @@ extension VNCProtocol.ExtendedDesktopSizeEncoding {
 		let reasonNum = rectangle.xPosition
 		let userRequestedChangeStatusNum = rectangle.yPosition
 
-		// If reason is nil, it indicates a server-side change
-		_ = Reason(rawValue: reasonNum)
-		_ = UserRequestedChangeStatus(rawValue: userRequestedChangeStatusNum)
-
 		let newSize = rectangle.region.size
 
 		let numberOfScreens = try await connection.readUInt8()
@@ -58,8 +59,16 @@ extension VNCProtocol.ExtendedDesktopSizeEncoding {
 			screens.append(screen)
 		}
 
+		let change: VNCDesktopSizeChange = switch Reason(rawValue: reasonNum) {
+		case .changedBecauseClientRequestedIt: .answer(status: userRequestedChangeStatusNum)
+		case .changedBecauseAnotherClientRequestedIt: .otherClient
+		case .changedViaNonRFBMeans, nil: .server
+		}
+
 		framebuffer.resize(to: newSize,
 						   screens: screens)
+
+		didReceiveChange(change)
 	}
 }
 
