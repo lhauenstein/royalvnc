@@ -30,6 +30,12 @@ public final class VNCConnection: NSObjectOrAnyObject {
 	/// Learns about ExtendedDesktopSize messages, such as the answer to ``requestDesktopSize(width:height:)``.
 	public weak var desktopSizeDelegate: VNCDesktopSizeDelegate?
 
+	/// Gets the server's clipboard text instead of the system pasteboard, see
+	/// ``sendClipboardText(_:)`` for the other way. While set, the connection neither reads nor
+	/// writes the pasteboard, whatever ``Settings/isClipboardRedirectionEnabled`` says. Set it
+	/// before ``connect()``.
+	public weak var clipboardDelegate: VNCClipboardDelegate?
+
 #if canImport(ObjectiveC)
 	@objc
 #endif

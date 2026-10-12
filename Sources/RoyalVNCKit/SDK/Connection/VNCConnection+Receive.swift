@@ -107,6 +107,16 @@ private extension VNCConnection {
 
 		logger.logDebug("Received Clipboard Text from Server")
 
+		if let clipboardDelegate {
+			// An extended message carries no text this connection reads.
+			guard serverCutText.extended == nil else { return }
+
+			clipboardDelegate.connection(self,
+										 didReceiveClipboardText: text)
+
+			return
+		}
+
 		guard settings.isClipboardRedirectionEnabled else { return }
 
 		clipboard.text = text

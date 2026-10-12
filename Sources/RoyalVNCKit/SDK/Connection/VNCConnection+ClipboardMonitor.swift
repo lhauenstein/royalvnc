@@ -6,13 +6,13 @@ import Foundation
 
 extension VNCConnection {
 	func startMonitoringClipboard() {
-		guard settings.isClipboardRedirectionEnabled else { return }
+		guard redirectsClipboard else { return }
 
 		clipboardMonitor.startMonitoring()
 	}
 
 	func stopMonitoringClipboard() {
-		guard settings.isClipboardRedirectionEnabled else { return }
+		guard redirectsClipboard else { return }
 
 		clipboardMonitor.stopMonitoring()
 	}
@@ -30,7 +30,7 @@ extension VNCConnection: VNCClipboardMonitorDelegate {
 						  didChangeText text: String) {
 		logger.logDebug("Clipboard Monitor did change text")
 
-		guard settings.isClipboardRedirectionEnabled else { return }
+		guard redirectsClipboard else { return }
 
 		enqueueClientCutTextMessage(text)
 	}
